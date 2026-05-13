@@ -1,49 +1,87 @@
-from flask import Flask,request,render_template
+import streamlit as st
 import numpy as np
-import pandas
-import sklearn
 import pickle
 
-model = pickle.load(open('model.pkl','rb'))
-sc = pickle.load(open('standscaler.pkl','rb'))
-mx = pickle.load(open('minmaxscaler.pkl','rb'))
+# Load saved model and scalers
+model = pickle.load(open('model.pkl', 'rb'))
+sc = pickle.load(open('standscaler.pkl', 'rb'))
+mx = pickle.load(open('minmaxscaler.pkl', 'rb'))
 
+# Crop dictionary
 
-app = Flask(__name__)
+crop_dict = {
+    1: "rice",
+    2: "maize",
+    3: "chickpea",
+    4: "kidneybeans",
+    5: "pigeonpeas",
+    6: "mothbeans",
+    7: "mungbean",
+    8: "blackgram",
+    9: "lentil",
+    10: "pomegranate",
+    11: "grapes",
+    12: "mango",
+    13: "banana",
+    14: "watermelon",
+    15: "muskmelon",
+    16: "apple",
+    17: "orange",
+    18: "papaya",
+    19: "coconut",
+    20: "cotton",
+    21: "jute",
+    22: "coffee"
+}
 
-@app.route('/')
-def index():
-    return render_template("index.html")
+# Streamlit page config
+st.set_page_config(
+    page_title="Crop Recommendation System",
+    page_icon="🌱",
+    layout="centered"
+)
 
-@app.route("/predict",methods=['POST'])
-def predict():
-    N = request.form['Nitrogen']
-    P = request.form['Phosporus']
-    K = request.form['Potassium']
-    temp = request.form['Temperature']
-    humidity = request.form['Humidity']
-    ph = request.form['pH']
-    rainfall = request.form['Rainfall']
+# Title
+st.title("🌱 Crop Recommendation System")
+st.write("Enter the soil and weather details to get the best crop recommendation.")
 
-    feature_list = [N, P, K, temp, humidity, ph, rainfall]
-    single_pred = np.array(feature_list).reshape(1, -1)
+# User Inputs
+N = st.text_input("Nitrogen (N)", placeholder="Enter Nitrogen value")
+P = st.text_input("Phosphorus (P)", placeholder="Enter Phosphorus value")
+K = st.text_input("Potassium (K)", placeholder="Enter Potassium value")
+temp = st.text_input("Temperature (°C)", placeholder="Enter Temperature")
+humidity = st.text_input("Humidity (%)", placeholder="Enter Humidity")
+ph = st.text_input("pH Value", placeholder="Enter pH value")
+rainfall = st.text_input("Rainfall (mm)", placeholder="Enter Rainfall")
 
-    mx_features = mx.transform(single_pred)
-    sc_mx_features = sc.transform(mx_features)
-    prediction = model.predict(sc_mx_features)
+# Predict Button
+if st.button("Predict Crop"):
 
-    crop_dict = {1: "Rice", 2: "Maize", 3: "Jute", 4: "Cotton", 5: "Coconut", 6: "Papaya", 7: "Orange",
-                 8: "Apple", 9: "Muskmelon", 10: "Watermelon", 11: "Grapes", 12: "Mango", 13: "Banana",
-                 14: "Pomegranate", 15: "Lentil", 16: "Blackgram", 17: "Mungbean", 18: "Mothbeans",
-                 19: "Pigeonpeas", 20: "Kidneybeans", 21: "Chickpea", 22: "Coffee"}
+    try:
+        # Convert inputs to float
+        feature_list = [
+            float(N),
+            float(P),
+            float(K),
+            float(temp),
+            float(humidity),
+            float(ph),
+            float(rainfall)
+        ]
+        single_pred = np.array(feature_list).reshape(1, -1)
 
-    if prediction[0] in crop_dict:
-        crop = crop_dict[prediction[0]]
-        result = "{} is the best crop to be cultivated right there".format(crop)
-    else:
-        result = "Sorry, we could not determine the best crop to be cultivated with the provided data."
-    return render_template('index.html',result = result)
+        # Scale features
+        mx_features = mx.transform(single_pred)
+        sc_mx_features = sc.transform(mx_features)
 
+        # Prediction
+        prediction = model.predict(sc_mx_features)
 
-if __name__ == "__main__":
-    app.run(debug=True)
+        # Display result
+        if prediction[0] in crop_dict:
+            crop = crop_dict[prediction[0]]
+            st.success(f"✅ {crop} is the best crop to be cultivated.")
+        else:
+            st.error("❌ Sorry, could not determine the best crop.")
+    except ValueError:
+        st.warning("⚠ Please enter valid numeric values.")
