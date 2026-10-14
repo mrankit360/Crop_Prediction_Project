@@ -78,6 +78,7 @@ Adjust the filenames and structure to match your actual repository.
 🚀 Installation and Setup
 1. Clone the Repository
 git clone https://github.com/mr_ankit360/Crop_Prediction_Project.git
+
 cd Crop-Recommendation-System
 
 
